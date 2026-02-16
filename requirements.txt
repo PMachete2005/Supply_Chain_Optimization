@@ -9,3 +9,7 @@ joblib
 scipy
 jupyter
 notebook
+requests
+beautifulsoup4
+wbdata
+selenium
