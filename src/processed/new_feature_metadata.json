@@ -1,0 +1,26 @@
+{
+    "numeric_features": [
+        "Declared_Value_USD",
+        "Weight_kg",
+        "Compliance_Score",
+        "Prior_Offense_Count",
+        "Route_Risk_Index",
+        "Planned_Transit_Days",
+        "Actual_Transit_Days",
+        "Compliance_Risk_Score"
+    ],
+    "categorical_features": [
+        "Origin_Country",
+        "Destination_Country",
+        "Transport_Mode",
+        "Carrier_Name",
+        "Route_Code",
+        "Commodity_Type",
+        "Tariff_Category",
+        "Inspection_Type",
+        "Document_Status",
+        "Route_Risk_Level"
+    ],
+    "regression_target": "Arrival_Delay_Days",
+    "classification_target": "Route_Risk_Level"
+}
