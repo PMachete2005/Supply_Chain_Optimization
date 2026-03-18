@@ -119,11 +119,11 @@ def _latest_by_country(raw: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
     return latest
 
 
-def fetch_lpi_data_simple() -> None:
+def fetch_lpi_data_simple(out_path: str = "data/external/raw/worldbank_lpi_simple.csv") -> str:
     """
     Fetch multiple LPI indicators and save a combined CSV.
     """
-    os.makedirs("data/external/raw", exist_ok=True)
+    os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
 
     # country_id -> row data with multiple indicators
     combined: Dict[str, Dict[str, Any]] = {}
@@ -142,19 +142,21 @@ def fetch_lpi_data_simple() -> None:
 
     fieldnames = ["country_id", "country_name", "year"] + list(LPI_INDICATORS.values())
 
-    out_path = "data/external/raw/worldbank_lpi_simple.csv"
     with open(out_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         for row in combined.values():
             writer.writerow(row)
+    return out_path
 
 
-def fetch_trade_facilitation_simple() -> None:
+def fetch_trade_facilitation_simple(
+    out_path: str = "data/external/raw/worldbank_trade_facilitation_simple.csv",
+) -> str:
     """
     Fetch trade facilitation indicators and save a CSV.
     """
-    os.makedirs("data/external/raw", exist_ok=True)
+    os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
 
     combined: Dict[str, Dict[str, Any]] = {}
 
@@ -176,12 +178,12 @@ def fetch_trade_facilitation_simple() -> None:
         "year",
     ] + list(TRADE_FACILITATION_INDICATORS.values())
 
-    out_path = "data/external/raw/worldbank_trade_facilitation_simple.csv"
     with open(out_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         for row in combined.values():
             writer.writerow(row)
+    return out_path
 
 
 def main() -> None:
