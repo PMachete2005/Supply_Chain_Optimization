@@ -84,26 +84,24 @@ print("Total missing values:", df.isnull().sum().sum())
 
 #delete leakage columns 
 
-date_cols = [
-    'order date (DateOrders)',
-    'shipping date (DateOrders)'
-]
+# extract features from order date only
+order_date_col = 'order date (DateOrders)'
+df[order_date_col] = pd.to_datetime(df[order_date_col], errors='coerce')
 
-for col in date_cols:
-    df[col] = pd.to_datetime(df[col], errors='coerce')
-    
-    df[col + '_year'] = df[col].dt.year
-    df[col + '_month'] = df[col].dt.month
-    df[col + '_day'] = df[col].dt.day
+df['order_month'] = df[order_date_col].dt.month
+df['order_dayofweek'] = df[order_date_col].dt.dayofweek
+df['order_hour'] = df[order_date_col].dt.hour
 
-# drop original date columns
-df.drop(columns=date_cols, inplace=True)
+# drop both original date columns (shipping date dropped entirely)
+df.drop(columns=['order date (DateOrders)', 'shipping date (DateOrders)'], inplace=True)
 
 #---------------------------------------------
 
+# leakage columns - these leak target info and must be handled per task
 leakage_cols = [
     'Days for shipping (real)',
-    'Delivery Status'
+    'Delivery Status',
+    'Order Status'
 ]
 
 id_cols = [
@@ -122,7 +120,11 @@ text_cols = [
     'Product Name'
 ]
 
-df.drop(columns=leakage_cols + id_cols + text_cols, inplace=True)
+# save leakage columns before dropping so we can attach them per task
+saved_leakage = df[leakage_cols].copy()
+
+# drop IDs, text, AND leakage cols before encoding
+df.drop(columns=id_cols + text_cols + leakage_cols, inplace=True)
 print("New shape after column dropping:", df.shape)
 
 #------------------------------------------------------------
@@ -155,24 +157,18 @@ print("New shape after encoding:", df.shape)
 #------------------------------------------------------------
 
 # classification -> predict if an order will be delivered late 0 = ontime and 1 = late 
+# 'Days for shipment (scheduled)' is kept - it's a legitimate feature
 classification_df = df.copy()
-
-# target already exists
 classification_target = 'Late_delivery_risk'
-
-# drop regression target to avoid leakage
-classification_df = classification_df.drop(columns=['Days for shipment (scheduled)'])
 classification_df.to_csv("../src/data/classification_dataset.csv", index=False)
 print("Classification dataset shape:", classification_df.shape)
 
 #------------------------------------------------------------
 
-# regression -> predict expected shipping duration (days)
-regression_df = df.copy()
-
-regression_target = 'Days for shipment (scheduled)'
-
-# drop classification target
-regression_df = regression_df.drop(columns=['Late_delivery_risk'])
+# regression -> predict actual shipping duration
+# re-attach 'Days for shipping (real)' as target, drop 'Late_delivery_risk' as leaker
+regression_df = df.drop(columns=['Late_delivery_risk']).copy()
+regression_df['Days for shipping (real)'] = saved_leakage['Days for shipping (real)'].values
+regression_target = 'Days for shipping (real)'
 regression_df.to_csv("../src/data/regression_dataset.csv", index=False)
 print("Regression dataset shape:", regression_df.shape)
