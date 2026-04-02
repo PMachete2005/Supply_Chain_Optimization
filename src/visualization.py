@@ -245,7 +245,7 @@ def main():
     top_feature_analysis(reg_df, "Days for shipping (real)")
     top_feature_analysis(clf_df, "Late_delivery_risk")
 
-    print("\n All plots saved in outputs/plots/")
+    print("\n All plots saved in src/outputs/plots/")
 
 
 if __name__ == "__main__":
