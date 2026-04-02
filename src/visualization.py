@@ -8,7 +8,7 @@ sns.set_style("whitegrid")
 
 # Safe output directory
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUTPUT_DIR = os.path.join(BASE_DIR, "outputs", "plots")
+OUTPUT_DIR = os.path.join(BASE_DIR,"src", "outputs", "plots")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
@@ -17,12 +17,12 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 # --------------------------------------------------
 def load_data():
     reg_df = pd.read_csv(
-        "data/regression_dataset.csv",
+        os.path.join(BASE_DIR, "src", "data", "regression_dataset.csv"),
         low_memory=True
     )
 
     clf_df = pd.read_csv(
-        "data/classification_dataset.csv",
+        os.path.join(BASE_DIR, "src", "data", "classification_dataset.csv"),
         low_memory=True
     )
 
@@ -238,14 +238,14 @@ def main():
     shipping_mode_analysis(reg_df, clf_df)
 
     lpi_analysis(clf_df, "Late_delivery_risk")
-    lpi_analysis(reg_df, "Days for shipment (scheduled)")
+    lpi_analysis(reg_df, "Days for shipping (real)")
 
     market_analysis(reg_df, clf_df)
 
-    top_feature_analysis(reg_df, "Days for shipment (scheduled)")
+    top_feature_analysis(reg_df, "Days for shipping (real)")
     top_feature_analysis(clf_df, "Late_delivery_risk")
 
-    print("\n✅ All plots saved in outputs/plots/")
+    print("\n All plots saved in src/outputs/plots/")
 
 
 if __name__ == "__main__":
