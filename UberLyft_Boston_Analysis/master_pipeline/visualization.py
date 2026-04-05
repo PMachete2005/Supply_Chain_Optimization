@@ -39,8 +39,8 @@ print("Loading data...")
 reg = pd.read_csv(REG_PATH)
 clf = pd.read_csv(CLF_PATH)
 
-reg["Cab"] = reg["cab_type"].map({0: "Uber", 1: "Lyft"})
-clf["Cab"] = clf["cab_type"].map({0: "Uber", 1: "Lyft"})
+reg["Cab"] = reg["cab_type"].map({0: "Lyft", 1: "Uber"})
+clf["Cab"] = clf["cab_type"].map({0: "Lyft", 1: "Uber"})
 
 uber = reg[reg["Cab"] == "Uber"]["price"]
 lyft = reg[reg["Cab"] == "Lyft"]["price"]
@@ -68,10 +68,11 @@ save("01_histogram_fare_distribution.png")
 # 2. BAR CHART — Average fare by ride service type
 # ══════════════════════════════════════════════════════════
 name_map = {
-    0: "Lyft",      1: "Lyft XL",     8: "Lux",
-    9: "Lux Black", 10: "Lux Black XL", 11: "Lyft Black",
-    2: "UberX",     3: "UberXL",      4: "Black",
-    5: "UberPool",  6: "Black SUV",   7: "UberWAV",
+    0: "Black",      1: "Black SUV",    2: "Lux",
+    3: "Lux Black",  4: "Lux Black XL", 5: "Lyft",
+    6: "Lyft XL",    7: "Shared",       8: "Taxi",
+    9: "UberPool",  10: "UberX",       11: "UberXL",
+   12: "WAV",
 }
 reg["service"] = reg["name"].map(name_map)
 

@@ -112,7 +112,7 @@ regression_features = [col for col in regression_features if col in df.columns]
 
 classification_features = [
     col for col in regression_features
-    if 'surge' not in col and col != 'surge_multiplier'
+    if 'surge' not in col and col != 'surge_multiplier' and col not in ['name', 'name_encoded']
 ]
 
 y_price = df['price']
