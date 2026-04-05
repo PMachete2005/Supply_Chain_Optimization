@@ -11,6 +11,9 @@ from sklearn.metrics import mean_absolute_error, r2_score, accuracy_score, f1_sc
 import warnings
 warnings.filterwarnings('ignore')
 
+# Fraction of data held out for evaluation in both regression and classification
+TEST_SIZE = 0.2
+
 np.random.seed(42)
 
 print("="*80)
@@ -39,10 +42,18 @@ print("REGRESSION MODELS COMPARISON")
 print("="*80)
 
 def run_regression_models(df, label):
-    """Run regression models and return metrics"""
+    """Train Ridge and Decision Tree regressors and return R² and MAE metrics.
+
+    Args:
+        df: DataFrame containing features and a 'price' target column.
+        label: Descriptive string used for progress printing.
+
+    Returns:
+        dict with keys 'ridge' and 'tree', each holding r2 and mae scores.
+    """
     X = df.drop('price', axis=1)
     y = df['price']
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=TEST_SIZE, random_state=42)
     
     results = {}
     
@@ -99,10 +110,18 @@ print("CLASSIFICATION MODELS COMPARISON")
 print("="*80)
 
 def run_classification_models(df, label):
-    """Run classification models and return metrics"""
+    """Train Logistic Regression and Decision Tree classifiers and return accuracy and F1 metrics.
+
+    Args:
+        df: DataFrame containing features and an 'is_expensive' target column.
+        label: Descriptive string used for progress printing.
+
+    Returns:
+        dict with keys 'log_reg' and 'tree', each holding acc and f1 scores.
+    """
     X = df.drop('is_expensive', axis=1)
     y = df['is_expensive']
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=TEST_SIZE, random_state=42, stratify=y)
     
     results = {}
     
@@ -192,3 +211,4 @@ leading to better predictive performance!
 """)
 
 print("="*80)
+

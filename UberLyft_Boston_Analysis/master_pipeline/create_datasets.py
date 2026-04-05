@@ -11,7 +11,9 @@ from sklearn.preprocessing import LabelEncoder
 import warnings
 warnings.filterwarnings('ignore')
 
-np.random.seed(42)
+# Fixed seed used throughout for reproducibility
+RANDOM_STATE = 42
+np.random.seed(RANDOM_STATE)
 
 print("="*80)
 print("UBER/LYFT BOSTON - COMPLETE DATA PIPELINE")
@@ -72,14 +74,14 @@ df_valid = df_clean[df_clean['strata'].isin(valid_strata)]
 # Proportional sampling
 sample_size = min(100000, len(df_valid))
 df_sample = df_valid.groupby('strata').apply(
-    lambda x: x.sample(n=max(1, int(len(x) / len(df_valid) * sample_size)), random_state=42)
+    lambda x: x.sample(n=max(1, int(len(x) / len(df_valid) * sample_size)), random_state=RANDOM_STATE)
 ).reset_index(drop=True)
 
 # Add more if needed
 if len(df_sample) < 100000:
     remaining = 100000 - len(df_sample)
     additional = df_valid.drop(df_sample.index, errors='ignore').sample(
-        n=min(remaining, len(df_valid) - len(df_sample)), random_state=42)
+        n=min(remaining, len(df_valid) - len(df_sample)), random_state=RANDOM_STATE)
     df_sample = pd.concat([df_sample, additional]).reset_index(drop=True)
 
 print(f"✓ Stratified sample: {len(df_sample):,} records")
@@ -114,7 +116,8 @@ df['short_ride'] = (df['distance'] < 2).astype(int)
 df['medium_ride'] = ((df['distance'] >= 2) & (df['distance'] < 5)).astype(int)
 df['long_ride'] = (df['distance'] >= 5).astype(int)
 
-# Weather features (use available columns)
+# Weather features — column names differ depending on the raw data source,
+# so we check which one is present before creating the binary flags.
 if 'precipIntensity' in df.columns:
     df['is_rainy'] = (df['precipIntensity'] > 0).astype(int)
 elif 'rain' in df.columns:
@@ -285,3 +288,4 @@ OUTPUT FILES:
 print("="*80)
 print("PIPELINE COMPLETE - Ready for modeling!")
 print("="*80)
+

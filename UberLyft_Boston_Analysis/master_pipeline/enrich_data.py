@@ -11,6 +11,9 @@ import time
 import warnings
 warnings.filterwarnings('ignore')
 
+# Timeout (seconds) for all external API requests
+API_TIMEOUT = 30
+
 print("="*80)
 print("BOSTON DATA ENRICHMENT - WEB SCRAPING PIPELINE")
 print("="*80)
@@ -42,7 +45,7 @@ def get_boston_weather_history():
     url = f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={start_date.strftime('%Y-%m-%d')}&end_date={end_date.strftime('%Y-%m-%d')}&hourly=temperature_2m,relative_humidity_2m,precipitation,rain,weather_code,cloud_cover,wind_speed_10m,pressure_msl&timezone=America/New_York"
     
     try:
-        response = requests.get(url, timeout=30)
+        response = requests.get(url, timeout=API_TIMEOUT)
         data = response.json()
         
         hourly = data.get('hourly', {})
@@ -245,7 +248,15 @@ print("MERGING ENRICHED DATA")
 print("="*80)
 
 def enrich_dataset(df, weather_df=None):
-    """Add enrichment features to dataset"""
+    """Add enrichment features to dataset.
+
+    Args:
+        df: Original rides DataFrame.
+        weather_df: Optional weather DataFrame from Open-Meteo API.
+
+    Returns:
+        df_enriched: Copy of df with 9 new feature columns appended.
+    """
     
     df_enriched = df.copy()
     
@@ -380,3 +391,4 @@ NEXT STEP: Run models on enriched datasets to see performance improvement!
 print("="*80)
 print("ENICHMENT COMPLETE - Ready for model re-training!")
 print("="*80)
+
