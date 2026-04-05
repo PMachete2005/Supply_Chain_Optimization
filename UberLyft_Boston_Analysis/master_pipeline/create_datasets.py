@@ -198,10 +198,10 @@ print(f"✓ Classification features: {len(classification_features)} (excludes su
 
 # Targets
 y_price = df['price']
-y_surge = (df['surge_multiplier'] > 1.0).astype(int)
+y_premium = df['name'].str.contains('Black|Lux|SUV|XL', case=False, na=False).astype(int)
 
 print(f"✓ Target (Regression): price ${y_price.min():.2f} - ${y_price.max():.2f}")
-print(f"✓ Target (Classification): surge rate = {y_surge.mean()*100:.1f}% ({y_surge.sum():,} / {len(y_surge):,})")
+print(f"✓ Target (Classification): premium rate = {y_premium.mean()*100:.1f}% ({y_premium.sum():,} / {len(y_premium):,})")
 
 # ============================================
 # STEP 8: CREATE DATASETS & SAVE CSV FILES
@@ -215,7 +215,7 @@ regression_df.columns = [col.replace('_encoded', '') for col in regression_df.co
 
 # Create Classification Dataset  
 classification_df = df[classification_features].copy()
-classification_df['is_expensive'] = y_surge.values
+classification_df['is_premium'] = y_premium.values
 classification_df.columns = [col.replace('_encoded', '') for col in classification_df.columns]
 
 # Save to CSV
@@ -233,7 +233,7 @@ print(f"  Columns: {len(regression_df.columns)} ({len(regression_df.columns)-1} 
 
 print(f"✓ Saved CLASSIFICATION dataset: {clf_file}")
 print(f"  Shape: {classification_df.shape}")
-print(f"  Columns: {len(classification_df.columns)} ({len(classification_df.columns)-1} features + is_expensive)")
+print(f"  Columns: {len(classification_df.columns)} ({len(classification_df.columns)-1} features + is_premium)")
 
 # ============================================
 # STEP 9: SUMMARY
@@ -266,7 +266,7 @@ DATA PIPELINE SUMMARY:
 │ STEP 6 & 7: FEATURE SELECTION                                       │
 │   Regression: {len(regression_features)} features (with surge)                   │
 │   Classification: {len(classification_features)} features (no surge)                 │
-│   Target: price (${y_price.min():.2f}-${y_price.max():.2f}) / surge ({y_surge.mean()*100:.1f}%)        │
+│   Target: price (${y_price.min():.2f}-${y_price.max():.2f}) / premium ({y_premium.mean()*100:.1f}%)        │
 ├──────────────────────────────────────────────────────────────────────┤
 │ STEP 8: OUTPUT FILES                                                │
 │   regression_dataset.csv: {regression_df.shape[0]:,} rows × {regression_df.shape[1]} cols      │
@@ -280,9 +280,9 @@ OUTPUT FILES:
      - Target: price
 
   📁 {clf_file}
-     - Use for: Surge prediction classification models
+     - Use for: Premium vehicle classification models
      - Features: {len(classification_features)} (NO surge columns - prevents data leakage)
-     - Target: is_expensive (surge > 1.0)
+     - Target: is_premium (Uber Black/Lux/SUV/XL = 1, UberX/Lyft = 0)
 """)
 
 print("="*80)

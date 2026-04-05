@@ -110,17 +110,28 @@ print("CLASSIFICATION MODELS COMPARISON")
 print("="*80)
 
 def run_classification_models(df, label):
-    """Train Logistic Regression and Decision Tree classifiers and return accuracy and F1 metrics.
+    """Train LogisticRegression and DecisionTreeClassifier and return accuracy and F1 metrics.
 
     Args:
-        df: DataFrame containing features and an 'is_expensive' target column.
+        df: DataFrame containing features and a 'price' target column.
         label: Descriptive string used for progress printing.
 
     Returns:
         dict with keys 'log_reg' and 'tree', each holding acc and f1 scores.
     """
-    X = df.drop('is_expensive', axis=1)
-    y = df['is_expensive']
+    # Determine target column
+    target_col = None
+    for col in ['is_premium', 'is_premium_vehicle', 'is_expensive']:
+        if col in df.columns:
+            target_col = col
+            break
+    
+    if not target_col:
+        print(f"No target column found in {label} dataset")
+        return None
+    
+    X = df.drop(target_col, axis=1)
+    y = df[target_col]
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=TEST_SIZE, random_state=42, stratify=y)
     
     results = {}
