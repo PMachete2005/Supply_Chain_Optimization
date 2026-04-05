@@ -295,10 +295,12 @@ def enrich_dataset(df, weather_df=None):
     ])
     df_enriched['is_high_demand_zone'] = high_demand_sources.astype(int)
     
-    # 5. Fuel price impact (synthetic based on price levels)
-    df_enriched['fuel_price_indicator'] = np.where(
-        df_enriched.get('price', 0) > 25, 1, 0
-    )  # Higher prices may indicate fuel surcharge period
+    # 5. Fuel price impact (based on long distance + surge, NOT price)
+    df_enriched['fuel_price_indicator'] = (
+        (df_enriched.get('distance', 0) > 5) &
+        (df_enriched.get('surge_multiplier', 1) > 1.0) if 'surge_multiplier' in df_enriched.columns
+        else (df_enriched.get('distance', 0) > 5)
+    ).astype(int)
     
     # 6. Complex interaction features
     df_enriched['distance_event_interaction'] = (
@@ -309,8 +311,8 @@ def enrich_dataset(df, weather_df=None):
         df_enriched.get('is_rainy', 0) * df_enriched.get('is_rush_hour', 0)
     )
     
-    df_enriched['premium_weather_interaction'] = (
-        df_enriched.get('is_premium', 0) * df_enriched.get('is_rainy', 0)
+    df_enriched['cab_weather_interaction'] = (
+        df_enriched.get('cab_type', 0) * df_enriched.get('is_rainy', 0)
     )
     
     return df_enriched
@@ -377,7 +379,7 @@ NEW FEATURES ADDED ({len(new_features)} total):
   6. fuel_price_indicator - Potential fuel surcharge period
   7. distance_event_interaction - Distance × event time
   8. weather_rush_interaction - Rain × rush hour
-  9. premium_weather_interaction - Premium tier × rain
+  9. cab_weather_interaction - Cab type × rain
 
 OUTPUT FILES:
   📁 {reg_enriched_file}
