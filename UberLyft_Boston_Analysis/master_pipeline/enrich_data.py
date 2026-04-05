@@ -390,6 +390,6 @@ NEXT STEP: Run models on enriched datasets to see performance improvement!
 """)
 
 print("="*80)
-print("ENICHMENT COMPLETE - Ready for model re-training!")
+print("ENRICHMENT COMPLETE - Ready for model re-training!")
 print("="*80)
 
