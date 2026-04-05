@@ -126,7 +126,7 @@ classification_df = df[classification_features].copy()
 classification_df['is_premium'] = y_premium.values
 classification_df.columns = [col.replace('_encoded', '') for col in classification_df.columns]
 
-output_dir = '/home/kushagarwal/CascadeProjects/UberLyft_Boston_Analysis'
+output_dir = '/home/kushagarwal/CascadeProjects/Supply_Chain_Optimization/UberLyft_Boston_Analysis/new_data/processed'
 
 reg_file = f'{output_dir}/regression_dataset.csv'
 clf_file = f'{output_dir}/classification_dataset.csv'

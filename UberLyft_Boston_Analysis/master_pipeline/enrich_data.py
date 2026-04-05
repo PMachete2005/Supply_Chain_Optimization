@@ -20,8 +20,9 @@ print("="*80)
 
 # Load existing datasets
 print("\n1. Loading existing datasets...")
-reg_df = pd.read_csv('/home/kushagarwal/CascadeProjects/UberLyft_Boston_Analysis/regression_dataset.csv')
-clf_df = pd.read_csv('/home/kushagarwal/CascadeProjects/UberLyft_Boston_Analysis/classification_dataset.csv')
+DATA_DIR = '/home/kushagarwal/CascadeProjects/Supply_Chain_Optimization/UberLyft_Boston_Analysis/new_data/processed'
+reg_df = pd.read_csv(f'{DATA_DIR}/regression_dataset.csv')
+clf_df = pd.read_csv(f'{DATA_DIR}/classification_dataset.csv')
 
 print(f"✓ Regression dataset: {len(reg_df):,} records")
 print(f"✓ Classification dataset: {len(clf_df):,} records")
@@ -334,8 +335,8 @@ print("\n" + "="*80)
 print("SAVING ENRICHED DATASETS")
 print("="*80)
 
-reg_enriched_file = '/home/kushagarwal/CascadeProjects/UberLyft_Boston_Analysis/regression_dataset_enriched.csv'
-clf_enriched_file = '/home/kushagarwal/CascadeProjects/UberLyft_Boston_Analysis/classification_dataset_enriched.csv'
+reg_enriched_file = f'{DATA_DIR}/regression_dataset_enriched.csv'
+clf_enriched_file = f'{DATA_DIR}/classification_dataset_enriched.csv'
 
 reg_df_enriched.to_csv(reg_enriched_file, index=False)
 clf_df_enriched.to_csv(clf_enriched_file, index=False)
