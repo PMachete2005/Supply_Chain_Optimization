@@ -122,22 +122,24 @@ Include ALL features including surge-related:
 - `temp`, `humidity`, `wind`, `rain`, `is_rainy`, `is_cold`, `weather_severity`
 - `cab_type`, `name`, `is_premium`, `source`, `destination`
 
-**Target:** `y_price = df['price']`
+**Target:** `y_price = df['price']` is_premium
 
-### For Classification (18 features)
-**EXCLUDED surge columns** to prevent data leakage:
-- ❌ `surge_multiplier`
-- ❌ `distance_surge`
-- ❌ `weather_surge`
-- ❌ `rush_surge`
+### For Classification (29 features)
+**EXCLUDED vehicle tier columns** to prevent data leakage:
+-  `name`
+-  `is_premium`
+-  `uber_premium`
+-  `lyft_premium`
 
 **Included:**
-- `distance`, `hour`, `day_of_week`, `is_weekend`, `is_morning_rush`, `is_evening_rush`
+- `distance`, `surge_multiplier`, `distance_surge`, `weather_surge`, `rush_surge`
+- `hour`, `day_of_week`, `is_weekend`, `is_morning_rush`, `is_evening_rush`, `is_rush_hour`
+- `is_business_hours`, `is_late_night`, `month`, `day`, `week_of_year`, `quarter`
 - `temp`, `humidity`, `wind`, `rain`, `is_rainy`, `is_cold`, `weather_severity`
-- `cab_type`, `name`, `is_premium`, `source`, `destination`
+- `cab_type`, `source`, `destination`
+- `short_ride`, `medium_ride`, `long_ride`
 
-**Target:** `y_surge = (df['surge_multiplier'] > 1.0).astype(int)`
-- **Surge rate:** 3.3% of rides have surge
+**Target:** `y_clf = df['is_premium']`
 
 ---
 
@@ -173,10 +175,10 @@ y_price = df['price']
 
 ### Classification Target
 ```python
-y_surge = (df['surge_multiplier'] > 1.0).astype(int)
+y_clf = df['is_premium']
 ```
-- Class distribution: 96.7% (no surge) / 3.3% (surge)
-- Imbalance ratio: ~30:1
+- Target predicts whether a ride is a premium tier vehicle (Black, SUV, Lux, XL).
+- Class distribution needs to be evaluated based on the dataset.
 
 ---
 
@@ -218,10 +220,8 @@ XGBClassifier(
 )
 ```
 
-### Why scale_pos_weight=10?
-- Negatives: 96.7% → weight = 1
-- Positives: 3.3% → weight = 10
-- Balances 30:1 ratio to ~3:1 effective ratio
+### Why adjust weights?
+- Depending on the true positive rate of premium vehicles in the dataset, class weights might be needed to balance predictions.
 
 ---
 
@@ -237,8 +237,8 @@ XGBClassifier(
 | Split | 100K records | 80K train / 20K test |
 
 **Final Features:**
-- Regression: 21 features (includes surge)
-- Classification: 18 features (excludes surge - no data leakage)
+- Regression: 33 features
+- Classification: 29 features (excludes vehicle tier names to prevent data leakage)
 
 ---
 
@@ -255,9 +255,9 @@ XGBClassifier(
 ## Key Insights from Pipeline
 
 1. **Data Quality:** 7.95% of records had missing prices (removed)
-2. **Class Imbalance:** Only 3.3% rides have surge (handled with class weights)
-3. **Feature Importance:** `distance_surge` is strongest predictor (77% importance)
-4. **Surge Prevention:** Removed surge features from classification to prevent leakage
+2. **Class Imbalance:** Depends on the proportion of premium rides.
+3. **Feature Importance:** To be evaluated post-training.
+4. **Leakage Prevention:** Removed vehicle tier features (`name`, `is_premium`) from classification to prevent leakage.
 5. **Stratification:** Maintained Uber/Lyft balance (51.8% / 48.2%) in sample
 
 ---
