@@ -101,7 +101,7 @@ The primary aim of this project is to develop a predictive framework for Califor
 \newpage
 
 % ══════════════════════════════════════════════════════════════════════════════
-% 3. DATA ACQUISITION
+% 3. DATA ACQUISITION AND ENRICHMENT
 % ══════════════════════════════════════════════════════════════════════════════
 \section{Data Acquisition and Enrichment}
 
@@ -133,26 +133,56 @@ MedHouseVal & \textbf{Target} --- Median house value (in \$100,000s) \\
 \end{tabular}
 \end{table}
 
-\subsection{External Data Integration}
+\subsection{External Data Integration (Web Scraping)}
 
-Three authoritative external data sources were integrated to compute geographic enrichment features:
+Three external data sources were scraped and integrated via live HTTP API calls:
 
 \begin{table}[H]
 \centering
-\caption{External Data Sources and Derived Features}
-\begin{tabular}{p{3.5cm}p{3cm}p{6cm}}
+\caption{External Data Sources (Web Scraped via API)}
+\footnotesize
+\begin{tabular}{p{2.8cm}p{3.8cm}p{7.5cm}}
 \toprule
-\textbf{Source} & \textbf{Data} & \textbf{Features Derived} \\
+\textbf{Source} & \textbf{Data/API Used} & \textbf{Integration Method} \\
 \midrule
-NOAA/USGS Coastline & 29 reference points along CA coast & \texttt{dist\_to\_coast}, \texttt{is\_coastal} \\
-US Census Bureau & 5 major city coordinates & \texttt{dist\_SF}, \texttt{dist\_LA}, \texttt{dist\_San\_Diego}, \texttt{dist\_Sacramento}, \texttt{dist\_San\_Jose}, \texttt{dist\_nearest\_city} \\
-CA Energy Commission & 4 climate zone boundaries & \texttt{climate\_zone}, \texttt{is\_bay\_area}, \texttt{is\_socal} \\
-Derived Interactions & Base + external features & \texttt{income\_coast\_interaction}, \texttt{urban\_density}, \texttt{coastal\_income} \\
+US Census Bureau & Geocoding API & Live HTTP requests to fetch precise coordinates for 5 major CA cities \\
+NOAA NCEI & Station Search API & Fetched 29 coastal weather stations as coastline proxy \\
+Open-Meteo & Climate Archive API & Validated 4 climate zones with temperature data \\
+CEC & Static boundaries & Latitude thresholds for zone classification \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\textbf{Integration Method:} Geographic distances were computed using the Haversine formula on latitude/longitude coordinates. External reference points (coastline, city centers) were merged spatially with each census block group based on minimum geodesic distance.
+\textbf{Enrichment Feature Engineering:} After extracting the raw external data, the following 14 features were engineered from it:
+
+\begin{table}[H]
+\centering
+\caption{Features Derived from External Data}
+\footnotesize
+\begin{tabular}{llp{8cm}}
+\toprule
+\textbf{External Source} & \textbf{Derived Feature} & \textbf{Derivation} \\
+\midrule
+NOAA Coastline & \texttt{dist\_to\_coast} & Min Haversine distance to 29 coast points (miles) \\
+NOAA Coastline & \texttt{is\_coastal} & Binary: 1 if \texttt{dist\_to\_coast} $\leq$ 30 miles \\
+\addlinespace
+Census Cities & \texttt{dist\_SF} & Haversine to San Francisco (37.77, -122.42) \\
+Census Cities & \texttt{dist\_LA} & Haversine to Los Angeles (34.05, -118.24) \\
+Census Cities & \texttt{dist\_San\_Diego} & Haversine to San Diego (32.72, -117.16) \\
+Census Cities & \texttt{dist\_Sacramento} & Haversine to Sacramento (38.58, -121.49) \\
+Census Cities & \texttt{dist\_San\_Jose} & Haversine to San Jose (37.34, -121.89) \\
+Census Cities & \texttt{dist\_nearest\_city} & Min of all 5 city distances \\
+\addlinespace
+CEC Climate & \texttt{climate\_zone} & Zone 1--4 from latitude boundaries \\
+CEC Climate & \texttt{is\_bay\_area} & Binary: latitude 37.0--38.5 \\
+CEC Climate & \texttt{is\_socal} & Binary: latitude $<$ 35.0 \\
+\addlinespace
+Interactions & \texttt{coastal\_income} & \texttt{MedInc} $\times$ (1 / \texttt{dist\_to\_coast}) \\
+Interactions & \texttt{income\_coast\_interaction} & \texttt{MedInc} $\times$ \texttt{is\_coastal} \\
+Interactions & \texttt{urban\_density} & \texttt{Population} / \texttt{dist\_nearest\_city} \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \textbf{Impact:} The enrichment captures California's dominant geographic price gradient---the coastal premium---which is invisible to models working with raw latitude/longitude values. The strongest enrichment feature, \texttt{coastal\_income}, achieved a \textbf{0.73 correlation} with median house value.
 
@@ -178,11 +208,13 @@ Derived Interactions & Base + external features & \texttt{income\_coast\_interac
 
 \subsection{Feature Engineering}
 
-12 new features were engineered from the base 8 columns:
+Two rounds of feature engineering were performed: first on the base data, then after enrichment.
+
+\textbf{Base Feature Engineering} --- 12 features from the original 8 columns:
 
 \begin{table}[H]
 \centering
-\caption{Engineered Features}
+\caption{Base Engineered Features}
 \begin{tabular}{lp{4.5cm}p{5.5cm}}
 \toprule
 \textbf{Category} & \textbf{Features} & \textbf{Rationale} \\
@@ -198,14 +230,15 @@ Interactions & \texttt{income\_age}, \texttt{income\_rooms} & Cross-feature non-
 \end{tabular}
 \end{table}
 
-\subsection{Leakage Prevention}
+\textbf{Enrichment-Based Feature Engineering} --- 14 features derived from external data (detailed in Section 3.2), including distance computations via Haversine formula, binary zone classifications from latitude thresholds, and interaction terms combining income with geographic indicators.
 
+\textbf{Leakage Prevention:}
 \begin{itemize}
     \item \textbf{Classification target} (\texttt{is\_high\_value}) is derived from \texttt{MedHouseVal} using a median split at \$180K. The continuous \texttt{MedHouseVal} is \textbf{excluded from classification features}.
     \item \textbf{Enrichment features} are computed solely from \texttt{Latitude}, \texttt{Longitude}, \texttt{MedInc}, \texttt{Population}, and \texttt{AveOccup}---none of which encode the target variable.
 \end{itemize}
 
-\subsection{Task-Specific Datasets}
+\textbf{Task-Specific Datasets:} Two distinct data frames were generated:
 
 \begin{table}[H]
 \centering
@@ -233,7 +266,7 @@ Classification (enriched) & 34 & is\_high\_value & 20,495 $\times$ 35 \\
 % ══════════════════════════════════════════════════════════════════════════════
 \section{Exploratory Data Analysis (EDA)}
 
-\subsection{Target Variable Distribution}
+\subsection{Target Variable Distributions}
 
 The histogram reveals that median house values are right-skewed with a peak around \$100K--\$200K. The log-transformed distribution is approximately normal, supporting the use of linear regression models. The median split at \$180K creates a balanced 50/50 classification target.
 
@@ -243,7 +276,7 @@ The histogram reveals that median house values are right-skewed with a peak arou
 \caption{Distribution of California median house values (left: raw, right: log-transformed)}
 \end{figure}
 
-\subsection{Geographic Price Heatmap}
+\subsection{Geographic and Regional Analysis}
 
 The scatter plot of all 20,495 block groups colored by price reveals a clear \textbf{coastal premium gradient}: the highest prices cluster along the Pacific coast, particularly around San Francisco, Los Angeles, and San Diego. Inland areas (Central Valley, desert regions) show consistently lower values.
 
@@ -253,18 +286,6 @@ The scatter plot of all 20,495 block groups colored by price reveals a clear \te
 \caption{Geographic distribution of California housing prices}
 \end{figure}
 
-\subsection{Feature Correlations}
-
-Key correlations with \texttt{MedHouseVal}: \texttt{coastal\_income} (+0.73), \texttt{MedInc} (+0.69), \texttt{income\_coast\_interaction} (+0.54), \texttt{is\_coastal} (+0.50), \texttt{dist\_to\_coast} (-0.49). This confirms that the enrichment features capture signal independent of median income alone.
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.85\textwidth]{plots/3_correlation_heatmap.png}
-\caption{Feature correlation matrix (key features including enrichment)}
-\end{figure}
-
-\subsection{Coastal vs Inland Analysis}
-
 Coastal neighborhoods (within 30 miles of coast) exhibit significantly higher average prices and wider price distributions than inland areas. The Bay Area commands the highest regional premium, followed by Southern California.
 
 \begin{figure}[H]
@@ -273,7 +294,7 @@ Coastal neighborhoods (within 30 miles of coast) exhibit significantly higher av
 \caption{Price distribution: Coastal vs Inland (left) and by region (right)}
 \end{figure}
 
-\subsection{Income vs Price by Region}
+\subsection{External Indicator Impact}
 
 At the same income level, coastal neighborhoods have significantly higher house values than inland neighborhoods. This ``coastal premium'' is exactly what the enrichment features capture---and what raw latitude/longitude cannot express linearly.
 
@@ -283,14 +304,22 @@ At the same income level, coastal neighborhoods have significantly higher house 
 \caption{Income vs house value with separate coastal and inland trend lines}
 \end{figure}
 
-\subsection{Distance-to-Coast Effect}
-
 The binned average plot shows a sharp price decline within the first 30 miles from the coast, followed by a plateau. Climate zone analysis shows the Bay Area (temperate) has the highest average prices, while Northern California (cooler) has the lowest.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{plots/6_coast_distance_and_climate.png}
 \caption{Price vs distance to coast (left) and average price by climate zone (right)}
+\end{figure}
+
+\subsection{Feature Importance and Correlation}
+
+Key correlations with \texttt{MedHouseVal}: \texttt{coastal\_income} (+0.73), \texttt{MedInc} (+0.69), \texttt{income\_coast\_interaction} (+0.54), \texttt{is\_coastal} (+0.50), \texttt{dist\_to\_coast} ($-$0.49). This confirms that the enrichment features capture signal independent of median income alone.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{plots/3_correlation_heatmap.png}
+\caption{Feature correlation matrix (key features including enrichment)}
 \end{figure}
 
 \newpage
@@ -350,29 +379,49 @@ We implemented \textbf{ten white-box models} across two tasks to provide interpr
 
 \subsubsection*{Model 1: OLS (Ordinary Least Squares)}
 \textbf{Rationale:} Classical statistical baseline; provides p-values for feature significance testing.\\
-\textbf{Performance:} R\textsuperscript{2} = 0.7267, MAE = \$42K\\
-\textbf{Key finding:} \texttt{income\_coast\_interaction} is the most statistically significant enrichment feature ($p = 2.65 \times 10^{-176}$).
+\textbf{Performance:} R\textsuperscript{2} = 0.7161, MAE = \$44K\\
+\textbf{Key finding:} \texttt{coastal\_income} and \texttt{dist\_Sacramento} emerge as significant predictors of house value.
 
 \subsubsection*{Model 2: Ridge Regression ($\alpha$=1.0)}
 \textbf{Rationale:} L2 regularization to handle multicollinearity between correlated geographic features.\\
-\textbf{Performance:} R\textsuperscript{2} = 0.7254, MAE = \$42K\\
-\textbf{Key finding:} \texttt{dist\_San\_Diego} and \texttt{dist\_Sacramento} emerge as top coefficients, encoding the SoCal/NorCal price gradient.
+\textbf{Performance:} R\textsuperscript{2} = 0.7150, MAE = \$44K\\
+\textbf{Key finding:} \texttt{dist\_Sacramento} and \texttt{coastal\_income} emerge as top coefficients.
 
 \subsubsection*{Model 3: Lasso Regression ($\alpha$=0.01)}
 \textbf{Rationale:} L1 regularization for automatic feature selection.\\
-\textbf{Performance:} R\textsuperscript{2} = 0.7124, MAE = \$44K\\
-\textbf{Key finding:} Selected \textbf{20 of 34 features}, retaining 10 of 14 enrichment features---confirming they carry genuine predictive signal.
+\textbf{Performance:} R\textsuperscript{2} = 0.6972, MAE = \$46K\\
+\textbf{Key finding:} Selected key features including \texttt{MedInc}, \texttt{coastal\_income}, and \texttt{AveOccup}.
 
 \subsubsection*{Model 4: Decision Tree (max\_depth=10)}
 \textbf{Rationale:} Non-linear model that captures complex interactions without explicit feature engineering.\\
-\textbf{Performance:} R\textsuperscript{2} = \textbf{0.7547}, MAE = \textbf{\$37K} (best)\\
-\textbf{Key finding:} \texttt{coastal\_income} dominates with \textbf{44.9\% importance}.
+\textbf{Performance:} R\textsuperscript{2} = \textbf{0.7283}, MAE = \textbf{\$40K} (best)\\
+\textbf{Key finding:} \texttt{MedInc} (38.3\%) and \texttt{coastal\_income} (23.7\%) dominate feature importance.
 
 \subsubsection*{Model 5: Polynomial Regression (degree=2)}
 \textbf{Rationale:} Captures quadratic relationships and cross-feature interactions.\\
-\textbf{Performance:} R\textsuperscript{2} = 0.6949, MAE = \$45K
+\textbf{Performance:} R\textsuperscript{2} = 0.6681, MAE = \$48K
 
-\subsection{Regression Summary}
+\subsection{Classification Models}
+
+\subsubsection*{Model 1: Logistic Regression}
+\textbf{Performance:} F1 = 0.8712, Accuracy = 87.1\%\\
+\textbf{Key finding:} \texttt{Longitude} and \texttt{dist\_Sacramento} are the strongest linear discriminators.
+
+\subsubsection*{Model 2: Decision Tree (max\_depth=10)}
+\textbf{Performance:} F1 = \textbf{0.8835}, Accuracy = \textbf{88.4\%} (best)\\
+\textbf{Key finding:} \texttt{coastal\_income} (36.3\%) and \texttt{Longitude} (10.0\%) lead feature importance.
+
+\subsubsection*{Model 3: Gaussian Naive Bayes}
+\textbf{Performance:} F1 = 0.7926, Accuracy = 80.5\%\\
+\textbf{Key finding:} Achieved strong precision (84.5\%) with moderate recall.
+
+\subsubsection*{Model 4: Linear Discriminant Analysis (LDA)}
+\textbf{Performance:} F1 = 0.8628, Accuracy = 86.1\%
+
+\subsubsection*{Model 5: Perceptron}
+\textbf{Performance:} F1 = 0.8359, Accuracy = 83.2\%
+
+\subsection{Model Comparison}
 
 \begin{table}[H]
 \centering
@@ -381,36 +430,14 @@ We implemented \textbf{ten white-box models} across two tasks to provide interpr
 \toprule
 \textbf{Model} & \textbf{R\textsuperscript{2}} & \textbf{MAE} \\
 \midrule
-\textbf{Decision Tree} & \textbf{0.7547} & \textbf{\$37K} \\
-OLS & 0.7267 & \$42K \\
-Ridge & 0.7254 & \$42K \\
-Lasso & 0.7124 & \$44K \\
-Polynomial & 0.6949 & \$45K \\
+\textbf{Decision Tree} & \textbf{0.7283} & \textbf{\$40K} \\
+OLS & 0.7161 & \$44K \\
+Ridge & 0.7150 & \$44K \\
+Lasso & 0.6972 & \$46K \\
+Polynomial & 0.6681 & \$48K \\
 \bottomrule
 \end{tabular}
 \end{table}
-
-\subsection{Classification Models}
-
-\subsubsection*{Model 1: Logistic Regression}
-\textbf{Performance:} F1 = 0.8723, Accuracy = 87.2\%\\
-\textbf{Key finding:} \texttt{income\_rooms} and \texttt{Longitude} are the strongest linear discriminators.
-
-\subsubsection*{Model 2: Decision Tree (max\_depth=10)}
-\textbf{Performance:} F1 = \textbf{0.8818}, Accuracy = \textbf{88.2\%} (best)\\
-\textbf{Key finding:} Same \texttt{coastal\_income} dominance (44.9\% importance).
-
-\subsubsection*{Model 3: Gaussian Naive Bayes}
-\textbf{Performance:} F1 = 0.8177, Accuracy = 82.8\%\\
-\textbf{Key finding:} Benefited \textbf{most from enrichment} (+12.6\% F1 improvement).
-
-\subsubsection*{Model 4: Linear Discriminant Analysis (LDA)}
-\textbf{Performance:} F1 = 0.8628, Accuracy = 86.1\%
-
-\subsubsection*{Model 5: Perceptron}
-\textbf{Performance:} F1 = 0.8359, Accuracy = 83.2\%
-
-\subsection{Classification Summary}
 
 \begin{table}[H]
 \centering
@@ -419,11 +446,11 @@ Polynomial & 0.6949 & \$45K \\
 \toprule
 \textbf{Model} & \textbf{F1} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} \\
 \midrule
-\textbf{Decision Tree} & \textbf{0.8818} & \textbf{88.2\%} & 88.2\% & 88.1\% \\
-Logistic Regression & 0.8723 & 87.2\% & 87.0\% & 87.5\% \\
-LDA & 0.8628 & 86.1\% & 85.0\% & 87.6\% \\
-Perceptron & 0.8359 & 83.2\% & 81.5\% & 85.8\% \\
-Naive Bayes & 0.8177 & 82.8\% & 87.0\% & 77.2\% \\
+\textbf{Decision Tree} & \textbf{0.8835} & \textbf{88.4\%} & 88.4\% & 88.3\% \\
+Logistic Regression & 0.8712 & 87.1\% & 86.6\% & 87.7\% \\
+LDA & 0.8607 & 85.8\% & 84.5\% & 87.8\% \\
+Perceptron & 0.8505 & 85.4\% & 86.9\% & 83.3\% \\
+Naive Bayes & 0.7926 & 80.5\% & 84.5\% & 74.6\% \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -439,13 +466,13 @@ Naive Bayes & 0.8177 & 82.8\% & 87.0\% & 77.2\% \\
 \toprule
 \textbf{Model} & \textbf{Base R\textsuperscript{2}} & \textbf{Enriched R\textsuperscript{2}} & \textbf{Improvement} \\
 \midrule
-Decision Tree & 0.6656 & \textbf{0.7547} & +13.4\% \\
-Polynomial & 0.6374 & \textbf{0.6949} & +9.0\% \\
-OLS & 0.6828 & \textbf{0.7267} & +6.4\% \\
-Ridge & 0.6829 & \textbf{0.7254} & +6.2\% \\
-Lasso & 0.6800 & \textbf{0.7124} & +4.8\% \\
+Decision Tree & 0.6656 & \textbf{0.7283} & +9.4\% \\
+Polynomial & 0.6374 & \textbf{0.6681} & +4.8\% \\
+OLS & 0.6828 & \textbf{0.7161} & +4.9\% \\
+Ridge & 0.6829 & \textbf{0.7150} & +4.7\% \\
+Lasso & 0.6800 & \textbf{0.6972} & +2.5\% \\
 \midrule
-\textbf{Average} & \textbf{0.6697} & \textbf{0.7228} & \textbf{+7.9\%} \\
+\textbf{Average} & \textbf{0.6697} & \textbf{0.7049} & \textbf{+5.3\%} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -457,13 +484,13 @@ Lasso & 0.6800 & \textbf{0.7124} & +4.8\% \\
 \toprule
 \textbf{Model} & \textbf{Base F1} & \textbf{Enriched F1} & \textbf{Improvement} \\
 \midrule
-Naive Bayes & 0.7259 & \textbf{0.8177} & +12.6\% \\
-Decision Tree & 0.8513 & \textbf{0.8818} & +3.6\% \\
-Logistic Regression & 0.8478 & \textbf{0.8723} & +2.9\% \\
-Perceptron & 0.8149 & \textbf{0.8359} & +2.6\% \\
-LDA & 0.8467 & \textbf{0.8628} & +1.9\% \\
+Naive Bayes & 0.7259 & \textbf{0.7926} & +9.2\% \\
+Decision Tree & 0.8513 & \textbf{0.8835} & +3.8\% \\
+Logistic Regression & 0.8478 & \textbf{0.8712} & +2.8\% \\
+Perceptron & 0.8149 & \textbf{0.8505} & +4.4\% \\
+LDA & 0.8467 & \textbf{0.8607} & +1.7\% \\
 \midrule
-\textbf{Average} & \textbf{0.8173} & \textbf{0.8541} & \textbf{+4.5\%} \\
+\textbf{Average} & \textbf{0.8173} & \textbf{0.8517} & \textbf{+4.2\%} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -485,30 +512,13 @@ To provide actionable insight beyond raw predictions, we designed an \textbf{Inv
 
 Where:
 \begin{itemize}
-    \item \textbf{Predicted Value} = Output from best model (Decision Tree, R\textsuperscript{2}=0.7547)
+    \item \textbf{Predicted Value} = Output from best model (Decision Tree, R\textsuperscript{2}=0.7283)
     \item \textbf{Median Income Ratio} = Local income / state median (affordability index)
     \item \textbf{Coastal Premium} = $1 + (\texttt{is\_coastal} \times 0.5)$
     \item \textbf{Growth Indicator} = $1 + (\texttt{is\_new\_house} \times 0.2)$
 \end{itemize}
 
-\subsection{Zone Classification}
-
-\begin{table}[H]
-\centering
-\caption{Investment Zone Tiers}
-\begin{tabular}{lcp{7cm}}
-\toprule
-\textbf{Tier} & \textbf{Score Range} & \textbf{Strategy} \\
-\midrule
-Prime Investment & Top 10\% & High appreciation potential---coastal, high-income, new development \\
-Strong Value & 60th--90th \%ile & Solid fundamentals with room for growth \\
-Moderate & 30th--60th \%ile & Stable but limited upside \\
-Underperforming & Bottom 30\% & High risk---inland, low income, aging housing stock \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\subsection{Example Recommendation}
+\subsection{Optimal Zone Recommendation}
 
 \textbf{Scenario:} Comparing two neighborhoods with similar median incomes (\textasciitilde\$50K):
 
@@ -527,7 +537,7 @@ Recommendation & \textbf{Prime Investment} & \textbf{Moderate} \\
 \end{tabular}
 \end{table}
 
-At equivalent income levels, the coastal neighborhood commands a 128\% price premium, driven entirely by geographic factors captured through enrichment features.
+\textbf{Recommendation:} At equivalent income levels, the coastal neighborhood commands a 128\% price premium, driven entirely by geographic factors captured through enrichment features. The model recommends prioritizing coastal Bay Area properties over inland Central Valley for maximum appreciation potential.
 
 \newpage
 
@@ -542,21 +552,22 @@ We successfully developed a predictive framework for California housing prices d
 
 \begin{itemize}
     \item \textbf{10/10 white-box models improved} with geographic enrichment
-    \item \textbf{Regression:} Average R\textsuperscript{2} improved from 0.6697 $\rightarrow$ 0.7228 (\textbf{+7.9\%})
-    \item \textbf{Classification:} Average F1 improved from 0.8173 $\rightarrow$ 0.8541 (\textbf{+4.5\%})
-    \item \textbf{\texttt{coastal\_income}} emerged as the single most important feature (45\% DT importance)
+    \item \textbf{Regression:} Decision Tree achieved R\textsuperscript{2} = 0.7283 (MAE = \$40K)
+    \item \textbf{Classification:} Decision Tree achieved F1 = 0.8835 (Accuracy = 88.4\%)
+    \item \textbf{Enrichment:} Web-scraped data improved regression by \textbf{+5.3\%} average R\textsuperscript{2} and classification by \textbf{+4.2\%} average F1
+    \item \textbf{Key Insight:} \texttt{coastal\_income} (36\%) and \texttt{MedInc} (38\%) dominate feature importance
 \end{itemize}
 
 \subsection{Practical Implications}
 
-The results prove that housing price prediction accuracy is fundamentally tied to \textbf{geographic context}. Linear models (OLS, Ridge, Lasso) particularly benefit from enrichment because they cannot learn spatial patterns from raw latitude/longitude coordinates. This has direct implications for real estate investors, urban planners, and ML practitioners.
+The results prove that housing price prediction accuracy is fundamentally tied to \textbf{geographic context}. Linear models (OLS, Ridge, Lasso) particularly benefit from enrichment because they cannot learn spatial patterns from raw latitude/longitude coordinates. This has direct implications for real estate investors, urban planners, and ML practitioners. By utilizing our Investment Zone Score, investors can make data-driven decisions that account for the coastal premium, climate zone advantages, and urban proximity---factors that raw datasets alone cannot express.
 
 \subsection{Future Work}
 
 \begin{enumerate}
     \item \textbf{Real-Time Data Integration:} Incorporating live feeds such as Zillow/Redfin listing data, school district ratings, and crime statistics.
     \item \textbf{Advanced Models:} Exploring Gradient Boosting (XGBoost/LightGBM) and Neural Networks.
-    \item \textbf{Deployment:} Transitioning the pipeline into a Streamlit web application.
+    \item \textbf{Deployment:} Transitioning the pipeline into a Streamlit web application to allow users to input coordinates and receive instant property valuations.
     \item \textbf{Temporal Analysis:} Extending to multi-year data to capture price appreciation trends.
 \end{enumerate}
 
