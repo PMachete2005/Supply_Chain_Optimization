@@ -7,19 +7,15 @@ warnings.filterwarnings('ignore')
 RANDOM_STATE = 42
 np.random.seed(RANDOM_STATE)
 
-df = pd.read_csv('rideshare_kaggle.csv')
-print(f"Raw dataset: {df.shape[0]} rows, {df.shape[1]} columns")
-print(df[['price', 'name', 'cab_type', 'distance', 'surge_multiplier']].head(3))
+# STEP 1: LOAD DATA
+df = pd.read_csv('/home/kushagarwal/Downloads/archive(1)/rideshare_kaggle.csv')
 
-# cleaning the data
+# STEP 2: CLEAN DATA
 df_clean = df.dropna(subset=['price'])
 df_clean = df_clean[df_clean['price'] > 0]
 df_clean = df_clean.dropna(subset=['distance', 'surge_multiplier'])
-print(f"After cleaning: {df_clean.shape[0]} rows")
-print(f"Rows dropped: {693071 - df_clean.shape[0]}")
-print(f"Missing prices remaining: {df_clean['price'].isna().sum()}")
 
-# stratified sampling
+# STEP 3: STRATIFIED SAMPLING
 df_clean['price_category'] = pd.cut(df_clean['price'], bins=[0, 10, 15, 25, 1000], 
                                    labels=['low', 'mid', 'high', 'premium'])
 
@@ -45,13 +41,7 @@ if len(df_sample) < 100000:
         n=min(remaining, len(df_valid) - len(df_sample)), random_state=RANDOM_STATE)
     df_sample = pd.concat([df_sample, additional]).reset_index(drop=True)
 
-print(f"Sample size: {df_sample.shape[0]} rows")
-print("\nSample distribution by cab_type:")
-print(df_sample['cab_type'].value_counts())
-print("\nSample distribution by price_category:")
-print(df_sample['price_category'].value_counts())
-
-# feature engineering
+# STEP 4: FEATURE ENGINEERING
 df = df_sample.copy()
 
 df['timestamp'] = pd.to_datetime(df['timestamp'])
@@ -66,15 +56,9 @@ df['is_evening_rush'] = ((df['hour'] >= 17) & (df['hour'] <= 19) & (df['is_weeke
 df['is_rush_hour'] = df['is_morning_rush'] | df['is_evening_rush']
 df['is_night'] = ((df['hour'] >= 22) | (df['hour'] <= 5)).astype(int)
 
-df['hour_sin'] = np.sin(df['hour'] * (2. * np.pi / 24))
-df['hour_cos'] = np.cos(df['hour'] * (2. * np.pi / 24))
-df['dow_sin'] = np.sin(df['day_of_week'] * (2. * np.pi / 7))
-df['dow_cos'] = np.cos(df['day_of_week'] * (2. * np.pi / 7))
-
 df['short_ride'] = (df['distance'] < 2).astype(int)
 df['medium_ride'] = ((df['distance'] >= 2) & (df['distance'] < 5)).astype(int)
 df['long_ride'] = (df['distance'] >= 5).astype(int)
-df['log_distance'] = np.log1p(df['distance'])
 
 if 'precipIntensity' in df.columns:
     df['is_rainy'] = (df['precipIntensity'] > 0).astype(int)
@@ -105,31 +89,21 @@ df['is_premium'] = df['name'].str.contains('Black|Lux|SUV|XL', case=False, na=Fa
 df['uber_premium'] = ((df['cab_type'] == 'Uber') & (df['is_premium'] == 1)).astype(int)
 df['lyft_premium'] = ((df['cab_type'] == 'Lyft') & (df['is_premium'] == 1)).astype(int)
 
-# encoding
+# STEP 5: ENCODING
 cat_cols = ['cab_type', 'name', 'source', 'destination']
 for col in cat_cols:
     if col in df.columns:
         le = LabelEncoder()
         df[col + '_encoded'] = le.fit_transform(df[col].astype(str))
-        print("Encoded value mapping (sample):")
-print(df[['cab_type', 'cab_type_encoded']].drop_duplicates().sort_values('cab_type'))
-print()
-print(df[['name', 'name_encoded']].drop_duplicates().sort_values('name_encoded').head(6))
 
-
-if 'source' in df.columns and 'destination' in df.columns:
-    df['route'] = df['source'].astype(str) + '_' + df['destination'].astype(str)
-    df['route_encoded'] = LabelEncoder().fit_transform(df['route'])
-
-# finalise feature lists 
+# STEP 6 & 7: FEATURES + TARGETS
 regression_features = [
-    'distance', 'log_distance', 'surge_multiplier', 'hour', 'day_of_week', 'is_weekend',
-    'hour_sin', 'hour_cos', 'dow_sin', 'dow_cos',
+    'distance', 'surge_multiplier', 'hour', 'day_of_week', 'is_weekend',
     'is_morning_rush', 'is_evening_rush', 'is_rush_hour', 'is_night',
     'temperature', 'humidity', 'windSpeed',
     'is_rainy', 'is_cold', 'weather_severity',
     'cab_type_encoded', 'name_encoded', 'is_premium',
-    'source_encoded', 'destination_encoded', 'route_encoded',
+    'source_encoded', 'destination_encoded',
     'distance_surge', 'weather_surge', 'rush_surge',
     'short_ride', 'medium_ride', 'long_ride'
 ]
@@ -138,20 +112,13 @@ regression_features = [col for col in regression_features if col in df.columns]
 
 classification_features = [
     col for col in regression_features
-    if 'surge' not in col and col != 'surge_multiplier' and col not in ['name', 'name_encoded', 'is_premium']
+    if 'surge' not in col and col != 'surge_multiplier' and col not in ['name', 'name_encoded']
 ]
 
 y_price = df['price']
 y_premium = df['name'].str.contains('Black|Lux|SUV|XL', case=False, na=False).astype(int)
 
-
-print(f"Regression features ({len(regression_features)}): {regression_features}")
-print(f"\nClassification features ({len(classification_features)}): {classification_features}")
-print(f"\nFeatures REMOVED from classification to prevent leakage:")
-removed = set(regression_features) - set(classification_features)
-print(removed)
-
-# save datasets
+# STEP 8: CREATE & SAVE DATASETS
 regression_df = df[regression_features + ['price']].copy()
 regression_df.columns = [col.replace('_encoded', '') for col in regression_df.columns]
 
@@ -159,12 +126,10 @@ classification_df = df[classification_features].copy()
 classification_df['is_premium'] = y_premium.values
 classification_df.columns = [col.replace('_encoded', '') for col in classification_df.columns]
 
-output_dir = '../new_data/processed'
+output_dir = '/home/kushagarwal/CascadeProjects/Supply_Chain_Optimization/UberLyft_Boston_Analysis/new_data/processed'
 
 reg_file = f'{output_dir}/regression_dataset.csv'
 clf_file = f'{output_dir}/classification_dataset.csv'
 
 regression_df.to_csv(reg_file, index=False)
-print("Regression dataset created")
 classification_df.to_csv(clf_file, index=False)
-print("Classification dataset created")

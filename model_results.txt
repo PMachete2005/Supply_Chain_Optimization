@@ -1,0 +1,154 @@
+========================================================================
+Running models on enriched datasets
+========================================================================
+
+Regression:     100,000 rows x 48 features   target: price
+Classification: 100,000 rows x 42 features   target: is_premium
+
+========================================================================
+REGRESSION - 5 MODELS
+========================================================================
+
+Train: 80,000   Test: 20,000   Features: 48
+Price range: $2.50 - $92.00
+
+------------------------------------------------------------------------
+MODEL 1: OLS
+R2=-2.4775  MAE=$16.57  MSE=300.94  RMSE=$17.35
+Top 5 features:
+  long_ride                    +125118998214592.2969
+  is_rainy                     -55874272182236.3750
+  weather_severity_enhanced    -54724513918860.2578
+  windSpeed                    -53014552752614.7969
+  is_cold                      -19730933642079.3203
+
+------------------------------------------------------------------------
+MODEL 2: Ridge (alpha=1.0)
+R2=0.7018  MAE=$3.90  MSE=25.80  RMSE=$5.08
+Top 5 features:
+  distance_surge               +5.3483
+  is_premium                   +5.0853
+  name                         -2.5377
+  source                       +1.9553
+  route                        -1.8624
+
+------------------------------------------------------------------------
+MODEL 3: Lasso (alpha=0.1)
+R2=0.7005  MAE=$3.91  MSE=25.92  RMSE=$5.09
+Selected 5/48 features:
+  is_premium                   +5.0301
+  distance_surge               +3.2242
+  name                         -2.4359
+  surge_multiplier             +1.0842
+  cab_type                     +0.9286
+
+------------------------------------------------------------------------
+MODEL 4: Decision Tree (depth=10)
+R2=0.9639  MAE=$1.13  MSE=3.12  RMSE=$1.77
+Top 5 features:
+  name                         0.7227
+  distance_surge               0.1799
+  is_premium                   0.0637
+  cab_type                     0.0130
+  surge_multiplier             0.0100
+
+------------------------------------------------------------------------
+MODEL 5: Polynomial Regression (degree=2)
+R2=0.7293  MAE=$3.57  MSE=23.43  RMSE=$4.84
+Features: distance_surge, is_premium, name, source, route  (5 -> 20 terms)
+
+========================================================================
+REGRESSION SUMMARY
+========================================================================
+Model                   R2      MAE       MSE     RMSE
+--------------------------------------------------------------
+Decision Tree       0.9639  $  1.13      3.12  $  1.77
+Polynomial          0.7293  $  3.57     23.43  $  4.84
+Ridge               0.7018  $  3.90     25.80  $  5.08
+Lasso               0.7005  $  3.91     25.92  $  5.09
+OLS                -2.4775  $ 16.57    300.94  $ 17.35
+
+Best: Decision Tree   R2=0.9639  MAE=$1.13
+
+========================================================================
+CLASSIFICATION - 5 MODELS
+========================================================================
+
+Train: 80,000   Test: 20,000   Features: 42
+Premium rate: 58.0%
+
+------------------------------------------------------------------------
+MODEL 1: Logistic Regression
+Acc=0.5828  F1=0.6868  Prec=0.6086  Rec=0.7881
+               Pred   standard  Pred  premium
+  Act standard       2510            5883
+  Act  premium       2460            9147
+  Specificity: 0.2991   TP=9147  TN=2510  FP=5883  FN=2460
+Top 5 features (odds ratio):
+  cab_type                     OR=0.7068 dn
+  log_distance                 OR=0.9257 dn
+  distance                     OR=1.0709 up
+  destination                  OR=1.0138 up
+  humidity                     OR=1.0114 up
+
+------------------------------------------------------------------------
+MODEL 2: Decision Tree (depth=10)
+Acc=0.5769  F1=0.6793  Prec=0.6064  Rec=0.7720
+               Pred   standard  Pred  premium
+  Act standard       2577            5816
+  Act  premium       2646            8961
+  Specificity: 0.3070   TP=8961  TN=2577  FP=5816  FN=2646
+Top 5 features:
+  cab_type                     0.5233
+  temperature                  0.0863
+  distance                     0.0845
+  windSpeed                    0.0690
+  log_distance                 0.0638
+
+------------------------------------------------------------------------
+MODEL 3: Naive Bayes
+Acc=0.5791  F1=0.7123  Prec=0.5903  Rec=0.8979
+               Pred   standard  Pred  premium
+  Act standard       1160            7233
+  Act  premium       1185           10422
+  Specificity: 0.1382   TP=10422  TN=1160  FP=7233  FN=1185
+Priors: P(standard)=0.420  P(premium)=0.580
+
+------------------------------------------------------------------------
+MODEL 4: LDA
+Acc=0.5817  F1=0.6791  Prec=0.6121  Rec=0.7626
+               Pred   standard  Pred  premium
+  Act standard       2783            5610
+  Act  premium       2755            8852
+  Specificity: 0.3316   TP=8852  TN=2783  FP=5610  FN=2755
+Top 5 features:
+  cab_type                     -0.3524
+  route                        -0.2893
+  source                       +0.2834
+  log_distance                 -0.0839
+  distance                     +0.0745
+
+------------------------------------------------------------------------
+MODEL 5: Perceptron
+Acc=0.5234  F1=0.5475  Prec=0.6098  Rec=0.4967
+               Pred   standard  Pred  premium
+  Act standard       4704            3689
+  Act  premium       5842            5765
+  Specificity: 0.5605   TP=5765  TN=4704  FP=3689  FN=5842
+
+========================================================================
+CLASSIFICATION SUMMARY
+========================================================================
+Model                  Acc       F1     Prec      Rec
+--------------------------------------------------
+Naive Bayes         0.5791   0.7123   0.5903   0.8979
+Logistic Reg        0.5828   0.6868   0.6086   0.7881
+Decision Tree       0.5769   0.6793   0.6064   0.7720
+LDA                 0.5817   0.6791   0.6121   0.7626
+Perceptron          0.5234   0.5475   0.6098   0.4967
+
+Best: Naive Bayes   F1=0.7123  Acc=0.5791
+
+========================================================================
+DONE
+========================================================================
