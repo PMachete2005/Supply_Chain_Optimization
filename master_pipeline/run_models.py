@@ -33,9 +33,7 @@ def print_confusion(cm, labels=('standard', 'premium')):
     print(f"  Specificity: {spec:.4f}   TP={tp}  TN={tn}  FP={fp}  FN={fn}")
 
 
-print("=" * 72)
 print("Running models on enriched datasets")
-print("=" * 72)
 
 reg_df = pd.read_csv(REG_PATH)
 clf_df = pd.read_csv(CLF_PATH)
@@ -44,9 +42,7 @@ print(f"\nRegression:     {reg_df.shape[0]:,} rows x {reg_df.shape[1]-1} feature
 print(f"Classification: {clf_df.shape[0]:,} rows x {clf_df.shape[1]-1} features   target: is_premium")
 
 # Regression
-print("\n" + "=" * 72)
-print("REGRESSION - 5 MODELS")
-print("=" * 72)
+print("\nREGRESSION - 5 MODELS")
 
 X_reg = reg_df.drop('price', axis=1)
 y_reg = reg_df['price']
@@ -74,8 +70,7 @@ def reg_metrics(y_true, y_pred):
 
 
 # 1. OLS
-print("-" * 72)
-print("MODEL 1: OLS")
+print("\nMODEL 1: OLS")
 X_ols_train = sm.add_constant(X_train_rs)
 X_ols_test = sm.add_constant(X_test_rs)
 ols = sm.OLS(y_train_r, X_ols_train).fit()
@@ -91,8 +86,7 @@ for feat in top5.index:
     print(f"  {feature_names_reg[idx]:<28} {coefs[feat]:+.4f}")
 
 # 2. Ridge
-print("\n" + "-" * 72)
-print("MODEL 2: Ridge (alpha=1.0)")
+print("\nMODEL 2: Ridge (alpha=1.0)")
 ridge = Ridge(alpha=1.0, random_state=42)
 ridge.fit(X_train_rs, y_train_r)
 ridge_preds = ridge.predict(X_test_rs)
@@ -105,8 +99,7 @@ for i in top5:
     print(f"  {feature_names_reg[i]:<28} {ridge.coef_[i]:+.4f}")
 
 # 3. Lasso
-print("\n" + "-" * 72)
-print("MODEL 3: Lasso (alpha=0.1)")
+print("\nMODEL 3: Lasso (alpha=0.1)")
 lasso = Lasso(alpha=0.1, random_state=42, max_iter=10000)
 lasso.fit(X_train_rs, y_train_r)
 lasso_preds = lasso.predict(X_test_rs)
@@ -120,8 +113,7 @@ for feat, coef in selected[:5]:
     print(f"  {feat:<28} {coef:+.4f}")
 
 # 4. Decision Tree
-print("\n" + "-" * 72)
-print("MODEL 4: Decision Tree (depth=10)")
+print("\nMODEL 4: Decision Tree (depth=10)")
 tree_r = DecisionTreeRegressor(max_depth=10, random_state=42)
 tree_r.fit(X_train_r, y_train_r)
 tree_r_preds = tree_r.predict(X_test_r)
@@ -134,8 +126,7 @@ for i in top5:
     print(f"  {feature_names_reg[i]:<28} {tree_r.feature_importances_[i]:.4f}")
 
 # 5. Polynomial
-print("\n" + "-" * 72)
-print("MODEL 5: Polynomial Regression (degree=2)")
+print("\nMODEL 5: Polynomial Regression (degree=2)")
 top5_feats = [feature_names_reg[i] for i in np.argsort(np.abs(ridge.coef_))[-5:][::-1]]
 poly = PolynomialFeatures(degree=2, include_bias=False)
 X_train_poly = poly.fit_transform(X_train_r[top5_feats])
@@ -149,20 +140,15 @@ print(f"R2={r2:.4f}  MAE=${mae:.2f}  MSE={mse:.2f}  RMSE=${rmse:.2f}")
 print(f"Features: {', '.join(top5_feats)}  ({len(top5_feats)} -> {X_train_poly.shape[1]} terms)")
 
 # Regression Summary
-print("\n" + "=" * 72)
-print("REGRESSION SUMMARY")
-print("=" * 72)
+print("\nREGRESSION SUMMARY")
 print(f"{'Model':<18} {'R2':>7}  {'MAE':>7}  {'MSE':>8}  {'RMSE':>7}")
-print("-" * 62)
 for name, m in sorted(reg_results.items(), key=lambda x: x[1]['R2'], reverse=True):
     print(f"{name:<18} {m['R2']:>7.4f}  ${m['MAE']:>6.2f}  {m['MSE']:>8.2f}  ${m['RMSE']:>6.2f}")
 best_reg = max(reg_results.items(), key=lambda x: x[1]['R2'])
 print(f"\nBest: {best_reg[0]}   R2={best_reg[1]['R2']:.4f}  MAE=${best_reg[1]['MAE']:.2f}")
 
 # Classification
-print("\n" + "=" * 72)
-print("CLASSIFICATION - 5 MODELS")
-print("=" * 72)
+print("\nCLASSIFICATION - 5 MODELS")
 
 X_clf = clf_df.drop('is_premium', axis=1)
 y_clf = clf_df['is_premium']
@@ -191,8 +177,7 @@ def clf_metrics(y_true, y_pred):
 
 
 # 1. Logistic Regression
-print("-" * 72)
-print("MODEL 1: Logistic Regression")
+print("\nMODEL 1: Logistic Regression")
 log_reg = LogisticRegression(max_iter=1000, random_state=42)
 log_reg.fit(X_train_cs, y_train_c)
 log_preds = log_reg.predict(X_test_cs)
@@ -207,8 +192,7 @@ for i in top5:
     print(f"  {feature_names_clf[i]:<28} OR={or_val:.4f} {'up' if or_val > 1 else 'dn'}")
 
 # 2. Decision Tree
-print("\n" + "-" * 72)
-print("MODEL 2: Decision Tree (depth=10)")
+print("\nMODEL 2: Decision Tree (depth=10)")
 tree_c = DecisionTreeClassifier(max_depth=10, random_state=42)
 tree_c.fit(X_train_c, y_train_c)
 tree_c_preds = tree_c.predict(X_test_c)
@@ -222,8 +206,7 @@ for i in top5:
     print(f"  {feature_names_clf[i]:<28} {tree_c.feature_importances_[i]:.4f}")
 
 # 3. Naive Bayes
-print("\n" + "-" * 72)
-print("MODEL 3: Naive Bayes")
+print("\nMODEL 3: Naive Bayes")
 nb = GaussianNB()
 nb.fit(X_train_cs, y_train_c)
 nb_preds = nb.predict(X_test_cs)
@@ -234,8 +217,7 @@ print_confusion(cm)
 print(f"Priors: P(standard)={nb.class_prior_[0]:.3f}  P(premium)={nb.class_prior_[1]:.3f}")
 
 # 4. LDA
-print("\n" + "-" * 72)
-print("MODEL 4: LDA")
+print("\nMODEL 4: LDA")
 lda = LinearDiscriminantAnalysis()
 lda.fit(X_train_cs, y_train_c)
 lda_preds = lda.predict(X_test_cs)
@@ -249,8 +231,7 @@ for i in top5:
     print(f"  {feature_names_clf[i]:<28} {lda.coef_[0][i]:+.4f}")
 
 # 5. Perceptron
-print("\n" + "-" * 72)
-print("MODEL 5: Perceptron")
+print("\nMODEL 5: Perceptron")
 perc = Perceptron(max_iter=1000, random_state=42)
 perc.fit(X_train_cs, y_train_c)
 perc_preds = perc.predict(X_test_cs)
@@ -260,16 +241,11 @@ print(f"Acc={acc:.4f}  F1={f1:.4f}  Prec={prec:.4f}  Rec={rec:.4f}")
 print_confusion(cm)
 
 # Classification Summary
-print("\n" + "=" * 72)
-print("CLASSIFICATION SUMMARY")
-print("=" * 72)
+print("\nCLASSIFICATION SUMMARY")
 print(f"{'Model':<18} {'Acc':>7}  {'F1':>7}  {'Prec':>7}  {'Rec':>7}")
-print("-" * 50)
 for name, m in sorted(clf_results.items(), key=lambda x: x[1]['F1'], reverse=True):
     print(f"{name:<18} {m['Acc']:>7.4f}  {m['F1']:>7.4f}  {m['Prec']:>7.4f}  {m['Rec']:>7.4f}")
 best_clf = max(clf_results.items(), key=lambda x: x[1]['F1'])
 print(f"\nBest: {best_clf[0]}   F1={best_clf[1]['F1']:.4f}  Acc={best_clf[1]['Acc']:.4f}")
 
-print("\n" + "=" * 72)
-print("DONE")
-print("=" * 72)
+print("\nDONE")

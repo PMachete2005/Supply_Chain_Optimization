@@ -12,9 +12,7 @@ warnings.filterwarnings('ignore')
 
 API_TIMEOUT = 30
 
-print("="*50)
 print("DATA ENRICHMENT - WEB SCRAPING")
-print("="*50)
 
 # Load datasets
 print("\n1. Loading datasets...")
@@ -26,9 +24,7 @@ print(f"Regression dataset: {len(reg_df)} records")
 print(f"Classification dataset: {len(clf_df)} records")
 
 # Enrichment 1: Weather from Open-Meteo API
-print("\n" + "="*50)
-print("ENRICHMENT 1: BOSTON WEATHER (Open-Meteo API)")
-print("="*50)
+print("\nENRICHMENT 1: BOSTON WEATHER (Open-Meteo API)")
 
 def get_boston_weather_history():
     """Fetch historical weather data for Boston"""
@@ -84,9 +80,7 @@ if weather_data is not None:
     print(f"Weather features: temp, humidity, precipitation, wind, pressure, severity score")
 
 # Enrichment 2: Boston Events
-print("\n" + "="*50)
-print("ENRICHMENT 2: BOSTON EVENTS CALENDAR")
-print("="*50)
+print("\nENRICHMENT 2: BOSTON EVENTS & VENUES")
 
 def generate_boston_events():
     """Generate Boston event calendar"""
@@ -113,9 +107,7 @@ def generate_boston_events():
 events_data = generate_boston_events()
 
 # Enrichment 3: Traffic Patterns
-print("\n" + "="*50)
-print("ENRICHMENT 3: BOSTON TRAFFIC PATTERNS")
-print("="*50)
+print("\nENRICHMENT 3: BOSTON TRAFFIC PATTERNS")
 
 def generate_traffic_features():
     """Generate Boston traffic patterns"""
@@ -141,9 +133,7 @@ def generate_traffic_features():
 traffic_data = generate_traffic_features()
 
 # Enrichment 4: MBTA Transit
-print("\n" + "="*50)
-print("ENRICHMENT 4: BOSTON TRANSIT (MBTA)")
-print("="*50)
+print("\nENRICHMENT 4: BOSTON TRANSIT (MBTA)")
 
 def generate_transit_patterns():
     """Generate MBTA delay patterns"""
@@ -172,9 +162,7 @@ def generate_transit_patterns():
 transit_data = generate_transit_patterns()
 
 # Enrichment 5: Gas Prices
-print("\n" + "="*50)
-print("ENRICHMENT 5: BOSTON GAS PRICES")
-print("="*50)
+print("\nENRICHMENT 5: BOSTON GAS PRICES")
 
 def get_boston_gas_prices():
     """Fetch Boston area gas prices"""
@@ -199,9 +187,7 @@ gas_data = get_boston_gas_prices()
 
 
 # Merge enriched data with existing datasets
-print("\n" + "="*50)
-print("MERGING ENRICHED DATA")
-print("="*50)
+print("\nMERGING ENRICHED DATA")
 
 def enrich_dataset(df, weather_df=None):
     """Add enrichment features to dataset"""
@@ -266,9 +252,7 @@ for feat in new_features:
     print(f"  - {feat}")
 
 # Save enriched datasets
-print("\n" + "="*50)
-print("SAVING ENRICHED DATASETS")
-print("="*50)
+print("\nSAVING ENRICHED DATASETS")
 
 reg_enriched_file = f'{DATA_DIR}/regression_dataset_enriched.csv'
 clf_enriched_file = f'{DATA_DIR}/classification_dataset_enriched.csv'
@@ -283,9 +267,7 @@ print(f"Saved enriched classification: {clf_enriched_file}")
 print(f"  Shape: {clf_df_enriched.shape}")
 
 # Summary
-print("\n" + "="*50)
-print("DATA ENRICHMENT SUMMARY")
-print("="*50)
+print("\nDATA ENRICHMENT SUMMARY")
 
 print("\nENRICHMENT SOURCES USED:")
 print("  - Open-Meteo API: Enhanced weather (temp, rain, wind)")
@@ -311,8 +293,6 @@ print(f"  {clf_enriched_file}")
 print("\nEnrichment complete!")
 print("Next step: Run models on enriched datasets")
 
-print("="*50)
 print("ENRICHMENT COMPLETE")
-print("="*50)
 
 
